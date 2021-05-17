@@ -97,19 +97,3 @@ def test_remove_ip_to_nonexistent_sg():
             "sg-xxx", ip="0.0.0.0/0", port=1200, description="TEST", client=client
         )
     assert "does not exist" in str(err)
-
-
-@mock_ec2
-def test_search_sg():
-    client = boto3.client("ec2", region_name="us-west-1")
-    group_id = create_sg(client)
-    sg_retrieved = manage_sg.search_sg(client=client, name="Foobar")
-    assert group_id == sg_retrieved["GroupId"]
-
-
-@mock_ec2
-def test_search_sg_not_found():
-    client = boto3.client("ec2", region_name="us-west-1")
-    with pytest.raises(ClientError) as err:
-        manage_sg.search_sg(client=client, name="Foobar")
-    assert "does not exist" in str(err)

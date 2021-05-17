@@ -18,26 +18,6 @@ def create_conn():
     return boto3.client("ec2", region_name=os.getenv("AWS_REGION", "eu-west-2"))
 
 
-def search_sg(client=None, **kwargs):
-    if not kwargs.get("name") and not kwargs.get("description"):
-        raise AttributeError("Send either name or description")
-    client = create_conn() if not client else client
-    sgs = None
-
-    if kwargs.get("name"):
-        sgs = client.describe_security_groups(GroupNames=[kwargs.get("name")])
-
-    elif kwargs.get("description"):
-        sgs = client.describe_security_groups(
-            Filters=[{"Name": "description", "Values": [kwargs.get("description")]}]
-        )
-
-    if len(sgs["SecurityGroups"]) != 1:
-        raise AttributeError("Multiple SGs found")
-
-    return sgs["SecurityGroups"][0]
-
-
 def add_ip_to_sg(
     group_id: str,
     ip: str,
@@ -47,6 +27,7 @@ def add_ip_to_sg(
     client=None,
 ):
     client = create_conn() if not client else client
+
     try:
         client.authorize_security_group_ingress(
             GroupId=group_id,
@@ -93,21 +74,19 @@ if __name__ == "__main__":
     group.add_argument("--add-ip", help="IP to be added", type=str)
     group.add_argument("--remove-ip", help="IP to be removed", type=str)
     parser.add_argument(
-        "--sg-name", help="Name of the security group", type=str
+        "--sg-id", help="ID of the security group", type=str
     )
-    parser.add_argument("--port", help="Port to allow TCP access", type=int)
+    parser.add_argument("--port", help="Port to allow TCP access", type=int, required=True)
     args = parser.parse_args()
 
-    sg_id = search_sg(name=args.sg_name)["GroupId"]
-
     if args.add_ip:
-        logger.info(f"Adding {args.add_ip}:{args.port} to security group '{sg_id}'")
+        logger.info(f"Adding {args.add_ip}:{args.port} to security group '{args.sg_id}'")
         add_ip_to_sg(
-            sg_id, ip=args.add_ip, port=args.port, description="ADDED BY MANAGE_SG"
+            args.sg_id, ip=args.add_ip, port=args.port, description="ADDED BY MANAGE_SG"
         )
 
     elif args.remove_ip:
-        logger.info(f"Removing {args.remove_ip}:{args.port} to security group '{sg_id}'")
+        logger.info(f"Removing {args.remove_ip}:{args.port} to security group '{args.sg_id}'")
         remove_ip_from_sg(
-            sg_id, ip=args.remove_ip, port=args.port, description="ADDED BY MANAGE_SG"
+            args.sg_id, ip=args.remove_ip, port=args.port, description="ADDED BY MANAGE_SG"
         )

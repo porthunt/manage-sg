@@ -15,7 +15,12 @@ if os.getenv("DEBUG"):
 
 
 def create_conn():
-    return boto3.client("ec2", region_name=os.getenv("AWS_REGION", "eu-west-2"))
+    return boto3.client(
+        "ec2",
+        region_name=os.getenv("AWS_REGION", "eu-west-2"),
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    )
 
 
 def add_ip_to_sg(
@@ -73,20 +78,30 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--add-ip", help="IP to be added", type=str)
     group.add_argument("--remove-ip", help="IP to be removed", type=str)
+    parser.add_argument("--sg-id", help="ID of the security group", type=str)
     parser.add_argument(
-        "--sg-id", help="ID of the security group", type=str
+        "--port", help="Port to allow TCP access", type=int, required=True
     )
-    parser.add_argument("--port", help="Port to allow TCP access", type=int, required=True)
     args = parser.parse_args()
 
     if args.add_ip:
-        logger.info(f"Adding {args.add_ip}:{args.port} to security group '{args.sg_id}'")
+        logger.info(
+            f"Adding {args.add_ip}:{args.port} to security group '{args.sg_id}'"
+        )
         add_ip_to_sg(
-            args.sg_id, ip=args.add_ip, port=args.port, description="ADDED BY MANAGE_SG"
+            args.sg_id,
+            ip=args.add_ip,
+            port=args.port,
+            description="ADDED BY MANAGE_SG",
         )
 
     elif args.remove_ip:
-        logger.info(f"Removing {args.remove_ip}:{args.port} to security group '{args.sg_id}'")
+        logger.info(
+            f"Removing {args.remove_ip}:{args.port} to security group '{args.sg_id}'"
+        )
         remove_ip_from_sg(
-            args.sg_id, ip=args.remove_ip, port=args.port, description="ADDED BY MANAGE_SG"
+            args.sg_id,
+            ip=args.remove_ip,
+            port=args.port,
+            description="ADDED BY MANAGE_SG",
         )
